@@ -1,0 +1,35 @@
+experiment:
+  name: base
+
+model:
+  name: hfl/chinese-roberta-wwm-ext
+
+data:
+  chunk_file: /root/autodl-fs/ai-detector/data/processed/chunks.jsonl
+  train_split: train
+  validation_split: validation
+  test_split: test
+  max_length: 384
+  stride: 128
+  max_train_samples: null
+  max_eval_samples: null
+
+training:
+  seed: 42
+  epochs: 3
+  max_steps: -1
+  learning_rate: 2.0e-5
+  train_batch_size: 8
+  eval_batch_size: 16
+  gradient_accumulation_steps: 4
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  logging_steps: 20
+  eval_steps: 200
+  save_steps: 200
+  save_total_limit: 2
+  fp16: false
+  bf16: true
+
+output:
+  root: /root/autodl-fs/ai-detector

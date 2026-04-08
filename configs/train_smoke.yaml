@@ -1,0 +1,35 @@
+experiment:
+  name: smoke
+
+model:
+  name: hfl/chinese-roberta-wwm-ext
+
+data:
+  chunk_file: /root/autodl-fs/ai-detector/data/processed/chunks.jsonl
+  train_split: train
+  validation_split: validation
+  test_split: test
+  max_length: 256
+  stride: 96
+  max_train_samples: 256
+  max_eval_samples: 128
+
+training:
+  seed: 42
+  epochs: 1
+  max_steps: 200
+  learning_rate: 2.0e-5
+  train_batch_size: 4
+  eval_batch_size: 8
+  gradient_accumulation_steps: 2
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 50
+  save_total_limit: 1
+  fp16: false
+  bf16: true
+
+output:
+  root: /root/autodl-fs/ai-detector
