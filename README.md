@@ -43,6 +43,23 @@ source .venv/bin/activate
 python train.py --config configs/train_smoke.yaml --output-root "$PERSIST_ROOT/ai-detector"
 ```
 
+训练成功后自动关机：
+
+```bash
+source .venv/bin/activate
+export AUTO_SHUTDOWN_ON_SUCCESS=1
+export SHUTDOWN_DELAY_MINUTES=1
+bash scripts/run_train.sh
+```
+
+生成训练过程可视化报告：
+
+```bash
+source .venv/bin/activate
+python scripts/generate_training_report.py \
+  --run-dir "$PERSIST_ROOT/ai-detector/runs/<timestamp>_base"
+```
+
 运行推理：
 
 ```bash
@@ -73,5 +90,6 @@ python infer.py \
 - `scripts/run_prepare.sh`
 - `scripts/run_smoke.sh`
 - `scripts/run_train.sh`
+- `scripts/generate_training_report.py`
 - `scripts/run_infer.sh`
 - `scripts/tmux_train.sh`

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chinese RoBERTa Tokenizer Showcase</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --bg-deep: #e7dcc8;
+      --ink: #1d1a17;
+      --muted: #675f56;
+      --card: rgba(255, 251, 244, 0.84);
+      --line: rgba(29, 26, 23, 0.12);
+      --accent: #b34121;
+      --accent-soft: #f2c9b3;
+      --accent-deep: #7f2912;
+      --sage: #31473a;
+      --gold: #a57e2b;
+      --shadow: 0 24px 80px rgba(50, 34, 18, 0.16);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+      --mono: "IBM Plex Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      --sans: "Aptos", "Segoe UI Variable Display", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+      --serif: "Georgia", "Times New Roman", "Noto Serif SC", serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at top left, rgba(179, 65, 33, 0.18), transparent 32%),
+        radial-gradient(circle at top right, rgba(49, 71, 58, 0.15), transparent 28%),
+        linear-gradient(180deg, var(--bg) 0%, #f8f3eb 45%, #efe6d7 100%);
+    }
+
+    .page {
+      width: min(1280px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 80px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 48px;
+      border: 1px solid rgba(29, 26, 23, 0.08);
+      border-radius: 36px;
+      background:
+        linear-gradient(135deg, rgba(255, 251, 244, 0.88), rgba(244, 231, 212, 0.72)),
+        linear-gradient(180deg, rgba(255,255,255,0.4), rgba(255,255,255,0.05));
+      box-shadow: var(--shadow);
+    }
+
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(10px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .hero::before {
+      top: -90px;
+      right: -30px;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(179, 65, 33, 0.28), transparent 68%);
+    }
+
+    .hero::after {
+      left: -60px;
+      bottom: -100px;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(49, 71, 58, 0.22), transparent 70%);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(29, 26, 23, 0.06);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 18px 0 12px;
+      max-width: 900px;
+      font-family: var(--serif);
+      font-size: clamp(40px, 7vw, 78px);
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 0.95fr;
+      gap: 24px;
+      margin-top: 34px;
+      align-items: end;
+    }
+
+    .hero-panel,
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 60px rgba(76, 55, 34, 0.08);
+    }
+
+    .hero-panel {
+      padding: 24px;
+    }
+
+    .hero-panel h2,
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-panel .lead {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .fact {
+      padding: 14px;
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.54);
+      border: 1px solid rgba(29, 26, 23, 0.08);
+    }
+
+    .fact strong {
+      display: block;
+      font-size: 24px;
+      color: var(--accent-deep);
+      margin-bottom: 6px;
+    }
+
+    .fact span {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .callout {
+      position: relative;
+      padding: 28px;
+      overflow: hidden;
+      background:
+        linear-gradient(145deg, rgba(49, 71, 58, 0.97), rgba(27, 41, 33, 0.96));
+      color: #f9f3e8;
+    }
+
+    .callout::after {
+      content: "";
+      position: absolute;
+      inset: auto -20% -48% auto;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(242, 201, 179, 0.32), transparent 65%);
+      border-radius: 999px;
+    }
+
+    .callout h2 {
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+
+    .callout p {
+      margin: 0 0 14px;
+      color: rgba(249, 243, 232, 0.8);
+      line-height: 1.75;
+    }
+
+    .callout code {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .section {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .card {
+      padding: 28px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 640px;
+      line-height: 1.7;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .step {
+      position: relative;
+      min-height: 220px;
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid rgba(29, 26, 23, 0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.58));
+    }
+
+    .step .num {
+      display: inline-flex;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      align-items: center;
+      justify-content: center;
+      background: var(--ink);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .step h3 {
+      margin: 16px 0 10px;
+      font-size: 24px;
+      font-family: var(--serif);
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(179, 65, 33, 0.08);
+      color: var(--accent-deep);
+      font-size: 12px;
+      letter-spacing: 0.03em;
+    }
+
+    .demo {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 18px;
+    }
+
+    .demo-panel {
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid rgba(29, 26, 23, 0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
+    }
+
+    .demo-panel label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 136px;
+      resize: vertical;
+      border: 1px solid rgba(29, 26, 23, 0.12);
+      border-radius: 18px;
+      background: rgba(255, 250, 244, 0.88);
+      color: var(--ink);
+      padding: 16px 18px;
+      font: 16px/1.8 var(--sans);
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: rgba(179, 65, 33, 0.45);
+      box-shadow: 0 0 0 4px rgba(179, 65, 33, 0.08);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font: 600 14px var(--sans);
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff8f3;
+      box-shadow: 0 12px 32px rgba(179, 65, 33, 0.24);
+    }
+
+    .ghost {
+      background: rgba(29, 26, 23, 0.06);
+      color: var(--ink);
+    }
+
+    .stage {
+      margin-top: 16px;
+      border-radius: 18px;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid rgba(29, 26, 23, 0.08);
+    }
+
+    .stage h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .tokens {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .token {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(29, 26, 23, 0.08);
+      background: rgba(255, 255, 255, 0.9);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+
+    .token.cjk {
+      background: rgba(179, 65, 33, 0.08);
+      color: var(--accent-deep);
+    }
+
+    .token.punc {
+      background: rgba(49, 71, 58, 0.08);
+      color: var(--sage);
+    }
+
+    .token.special {
+      background: rgba(165, 126, 43, 0.14);
+      color: #6f5314;
+      font-weight: 700;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .note {
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid rgba(29, 26, 23, 0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.6));
+    }
+
+    .note h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      font-family: var(--serif);
+    }
+
+    .note p,
+    .note li {
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .note ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding: 24px 28px;
+      border-radius: 24px;
+      background: rgba(29, 26, 23, 0.92);
+      color: rgba(248, 241, 230, 0.86);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .footer strong {
+      color: #fff5e9;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .pipeline,
+      .demo,
+      .notes {
+        grid-template-columns: 1fr;
+      }
+
+      .facts {
+        grid-template-columns: 1fr;
+      }
+
+      .hero,
+      .card {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Tokenizer Anatomy</div>
+      <h1>hfl/chinese-roberta-wwm-ext<br>到底怎么分词</h1>
+      <p>
+        这个模型并不是先做传统中文分词再整词喂给 BERT。它使用的是
+        <strong>BertTokenizer</strong> 的三段式处理：<strong>BasicTokenizer</strong> 先按中文字符与标点做基础切分，
+        再由 <strong>WordPiece</strong> 用最长匹配优先策略映射到词表，最后加上
+        <strong>[CLS]</strong>、<strong>[SEP]</strong> 等特殊 token。
+      </p>
+
+      <div class="hero-grid">
+        <div class="hero-panel">
+          <h2>一句话理解</h2>
+          <p class="lead">
+            中文 BERT 系列里，很多汉字本身就是有效 token。<em>WWM</em> 指的是预训练时“整词掩码”的策略，
+            不是说推理阶段一定先做中文词语分词。运行时的核心仍然是 <strong>字符级基础切分 + WordPiece 子词映射</strong>。
+          </p>
+          <div class="facts">
+            <div class="fact">
+              <strong>1</strong>
+              <span>先给 CJK 字符两边加空格，让中文在基础阶段近似按字切开。</span>
+            </div>
+            <div class="fact">
+              <strong>2</strong>
+              <span>再用 WordPiece 的最长匹配优先算法查词表，而不是用 jieba 这类传统分词器。</span>
+            </div>
+            <div class="fact">
+              <strong>3</strong>
+              <span>WWM 是预训练掩码策略，用来让同一个词的多个字一起被 mask。</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-panel callout">
+          <h2>运行时真正发生的事</h2>
+          <p>输入中文句子时，模型不会先做“词法级别的语义分词”，而是先做规则切分，再做词表映射。</p>
+          <code>BertTokenizer → BasicTokenizer → WordPiece → Special Tokens</code>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <div class="section-head">
+          <div>
+            <h2>三层流程</h2>
+            <p>下面这三步，就是这个 tokenizer 的核心路径。你后面训练时看到的 token 长度、chunk 长度、截断行为，本质上都由这三步决定。</p>
+          </div>
+        </div>
+        <div class="pipeline">
+          <article class="step">
+            <span class="num">01</span>
+            <h3>BasicTokenizer</h3>
+            <p>处理大小写、空白符、标点，并对中文 CJK 字符做显式切开。你可以近似理解成“先把句子拆成更小、更规整的基础片段”。</p>
+            <div class="pill-row">
+              <span class="pill">tokenize_chinese_chars</span>
+              <span class="pill">punctuation split</span>
+              <span class="pill">whitespace cleanup</span>
+            </div>
+          </article>
+          <article class="step">
+            <span class="num">02</span>
+            <h3>WordPiece</h3>
+            <p>对每个基础片段做词表匹配，采用最长匹配优先。很多常见中文单字会直接命中词表；罕见片段可能被拆成更细的子词，最坏退化成 <code>[UNK]</code>。</p>
+            <div class="pill-row">
+              <span class="pill">greedy longest-match-first</span>
+              <span class="pill">vocab lookup</span>
+              <span class="pill">subword fallback</span>
+            </div>
+          </article>
+          <article class="step">
+            <span class="num">03</span>
+            <h3>Model Input</h3>
+            <p>在 token 序列首尾加入 <code>[CLS]</code> 和 <code>[SEP]</code>，再把它们转成 id。后面的 attention、截断、padding、chunking 都是在这个序列层面发生。</p>
+            <div class="pill-row">
+              <span class="pill">[CLS]</span>
+              <span class="pill">[SEP]</span>
+              <span class="pill">token ids</span>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <div>
+            <h2>交互式示意</h2>
+            <p>这里展示的是“机制示意”，不是调用真实词表后的精确输出。它的目的是帮你建立脑内模型：中文文本先被拆成基础片段，再转成可供 BERT 使用的 token 序列。</p>
+          </div>
+        </div>
+        <div class="demo">
+          <div class="demo-panel">
+            <label for="input">输入一句中文</label>
+            <textarea id="input">自然语言处理让AI读懂学术论文。</textarea>
+            <div class="button-row">
+              <button class="primary" id="run-demo">运行分词示意</button>
+              <button class="ghost" data-sample="自然语言处理让AI读懂学术论文。">学术示例</button>
+              <button class="ghost" data-sample="中文BERT不是传统分词器，而是BasicTokenizer加WordPiece。">机制示例</button>
+              <button class="ghost" data-sample="深度学习模型需要把长文档切成多个token chunk。">训练示例</button>
+            </div>
+          </div>
+
+          <div class="demo-panel">
+            <div class="stage">
+              <h3>Stage A · 原始文本</h3>
+              <div class="tokens" id="stage-raw"></div>
+            </div>
+            <div class="stage">
+              <h3>Stage B · BasicTokenizer 后</h3>
+              <div class="tokens" id="stage-basic"></div>
+            </div>
+            <div class="stage">
+              <h3>Stage C · WordPiece + Special Tokens</h3>
+              <div class="tokens" id="stage-wordpiece"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <article class="note">
+          <h3>这不是传统中文分词</h3>
+          <p>如果你脑子里想到的是“我 / 爱 / 自然语言处理”这种词级分词，那要及时纠正。这个 tokenizer 运行时并不依赖 jieba、THULAC 这类词法工具。</p>
+          <ul>
+            <li>运行阶段更接近“字符规整 + 子词映射”</li>
+            <li>很多常见汉字会直接作为 token</li>
+            <li>模型最终理解的是 token id 序列，不是人类肉眼看到的中文词边界</li>
+          </ul>
+        </article>
+
+        <article class="note">
+          <h3>WWM 真正指什么</h3>
+          <p><strong>Whole Word Masking</strong> 主要发生在预训练时。它的意思是：如果一个中文词由多个字组成，那么被 mask 时倾向一起 mask，而不是随机只盖住其中一个字。</p>
+          <ul>
+            <li>它提升的是预训练策略</li>
+            <li>不是说推理时一定先切成完整中文词</li>
+            <li>你现在做分类训练时，实际仍是走 BertTokenizer 的正常 tokenization 流程</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="footer">
+      <strong>说明：</strong>
+      这个页面展示的是 <code>hfl/chinese-roberta-wwm-ext</code> tokenizer 的核心机制与概念流程，
+      适合作为汇报、讲解和自我理解用的可视化材料。若你后面需要，我可以继续把它扩成真正调用 Hugging Face tokenizer
+      的在线 Demo 版，或者把这个页面接进你项目的 README / docs 体系里。
+    </section>
+  </main>
+
+  <script>
+    const input = document.getElementById("input");
+    const stageRaw = document.getElementById("stage-raw");
+    const stageBasic = document.getElementById("stage-basic");
+    const stageWordPiece = document.getElementById("stage-wordpiece");
+
+    const isCjk = (char) => /[\u4E00-\u9FFF]/.test(char);
+    const isPunc = (char) => /[，。！？；：、“”‘’（）()【】《》,.!?;:]/.test(char);
+    const isAsciiWord = (char) => /[A-Za-z0-9]/.test(char);
+
+    function classifyToken(token) {
+      if (token === "[CLS]" || token === "[SEP]" || token === "[UNK]") return "special";
+      if ([...token].every(isPunc)) return "punc";
+      if ([...token].some(isCjk)) return "cjk";
+      return "";
+    }
+
+    function renderTokens(node, items) {
+      node.innerHTML = "";
+      items.forEach((item) => {
+        const span = document.createElement("span");
+        span.className = `token ${classifyToken(item)}`.trim();
+        span.textContent = item;
+        node.appendChild(span);
+      });
+    }
+
+    function basicTokenize(text) {
+      const cleaned = text.replace(/\s+/g, " ").trim();
+      const tokens = [];
+      let buffer = "";
+
+      function flush() {
+        if (buffer) {
+          tokens.push(buffer);
+          buffer = "";
+        }
+      }
+
+      for (const char of cleaned) {
+        if (char === " ") {
+          flush();
+          continue;
+        }
+        if (isCjk(char) || isPunc(char)) {
+          flush();
+          tokens.push(char);
+          continue;
+        }
+        if (isAsciiWord(char)) {
+          buffer += char;
+          continue;
+        }
+        flush();
+        tokens.push(char);
+      }
+      flush();
+      return tokens;
+    }
+
+    function wordPieceSchematic(tokens) {
+      const output = ["[CLS]"];
+      for (const token of tokens) {
+        if ([...token].every(isCjk)) {
+          output.push(...[...token]);
+          continue;
+        }
+        if (/^[A-Za-z]+$/.test(token)) {
+          if (token.length <= 4) {
+            output.push(token.toLowerCase());
+          } else {
+            output.push(token.slice(0, 2).toLowerCase());
+            output.push("##" + token.slice(2).toLowerCase());
+          }
+          continue;
+        }
+        if (/^[0-9]+$/.test(token)) {
+          output.push(token);
+          continue;
+        }
+        if (isPunc(token)) {
+          output.push(token);
+          continue;
+        }
+        output.push("[UNK]");
+      }
+      output.push("[SEP]");
+      return output;
+    }
+
+    function runDemo() {
+      const text = input.value.trim() || "自然语言处理让AI读懂学术论文。";
+      const raw = [...text];
+      const basic = basicTokenize(text);
+      const wordpiece = wordPieceSchematic(basic);
+      renderTokens(stageRaw, raw);
+      renderTokens(stageBasic, basic);
+      renderTokens(stageWordPiece, wordpiece);
+    }
+
+    document.getElementById("run-demo").addEventListener("click", runDemo);
+    document.querySelectorAll("[data-sample]").forEach((button) => {
+      button.addEventListener("click", () => {
+        input.value = button.dataset.sample;
+        runDemo();
+      });
+    });
+
+    runDemo();
+  </script>
+</body>
+</html>
