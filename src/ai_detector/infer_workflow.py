@@ -114,7 +114,10 @@ def infer_documents(args: argparse.Namespace) -> int:
             raise ValueError("No inference documents found.")
 
         tokenizer = _load_tokenizer(args.checkpoint, args.tokenizer_name)
-        model = AutoModelForSequenceClassification.from_pretrained(args.checkpoint)
+        model = AutoModelForSequenceClassification.from_pretrained(
+            args.checkpoint,
+            use_safetensors=False,
+        )
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
         model.eval()

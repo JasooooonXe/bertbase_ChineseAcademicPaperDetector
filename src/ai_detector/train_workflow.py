@@ -194,7 +194,6 @@ def build_training_arguments(checkpoint_dir: Path, config: dict[str, Any]) -> An
         "report_to": [],
         "seed": training["seed"],
         "remove_unused_columns": False,
-        "save_safetensors": True,
     }
     eval_strategy_key = "evaluation_strategy" if "evaluation_strategy" in signature else "eval_strategy"
     kwargs[eval_strategy_key] = "steps"
@@ -209,6 +208,8 @@ def build_training_arguments(checkpoint_dir: Path, config: dict[str, Any]) -> An
         kwargs["bf16"] = bf16_enabled
     if "fp16" in signature:
         kwargs["fp16"] = fp16_enabled
+    if "save_safetensors" in signature:
+        kwargs["save_safetensors"] = True
     return TrainingArguments(**kwargs)
 
 
@@ -284,6 +285,7 @@ def train_model(config: dict[str, Any]) -> int:
             num_labels=2,
             id2label={0: "human", 1: "ai"},
             label2id={"human": 0, "ai": 1},
+            use_safetensors=False,
         )
         trainer_kwargs: dict[str, Any] = {
             "model": model,
